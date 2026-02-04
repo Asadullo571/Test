@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProStream - Professional Video Platform</title>
+    <style>
+        :root { --bg: #0f172a; --card: #1e293b; --primary: #2563eb; --red: #ef4444; --text: #f8fafc; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background: var(--bg); color: var(--text); line-height: 1.6; }
+
+        /* Auth Screen */
+        #auth-page { display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .auth-card { background: var(--card); padding: 35px; border-radius: 20px; width: 380px; box-shadow: 0 15px 40px rgba(0,0,0,0.4); border: 1px solid #334155; }
+        input { width: 100%; padding: 14px; margin: 10px 0; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; outline: none; }
+        input:focus { border-color: var(--primary); }
+        .btn-blue { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 16px; }
+
+        /* Navigation */
+        nav { background: var(--card); padding: 15px 5%; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #334155; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .nav-links button { background: none; border: none; color: #94a3b8; margin-left: 20px; cursor: pointer; font-size: 15px; transition: 0.3s; }
+        .nav-links button:hover, .nav-links button.active { color: white; }
+
+        /* Content */
+        .container { padding: 40px 5%; max-width: 1400px; margin: 0 auto; }
+        .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px; }
+        
+        /* Video Card */
+        .video-card { background: var(--card); border-radius: 15px; overflow: hidden; border: 1px solid #334155; transition: 0.3s; }
+        .video-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+        video { width: 100%; height: 200px; background: #000; display: block; }
+        .info { padding: 20px; }
+        .info h4 { margin-bottom: 5px; font-size: 18px; }
+        .info p { font-size: 14px; color: #94a3b8; margin-bottom: 15px; }
+
+        .btn-sub { padding: 6px 12px; border-radius: 6px; border: none; font-size: 12px; cursor: pointer; font-weight: bold; }
+        .btn-sub.not-active { background: var(--red); color: white; }
+        .btn-sub.active { background: #475569; color: white; }
+        
+        .delete-btn { color: var(--red); background: none; border: none; cursor: pointer; font-size: 13px; margin-top: 10px; text-decoration: underline; }
+
+        /* Modal */
+        .overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); z-index: 200; backdrop-filter: blur(5px); }
+        .modal { display: none; position: fixed; top:50%; left:50%; transform: translate(-50%, -50%); background: var(--card); padding: 30px; border-radius: 20px; z-index: 201; width: 420px; border: 1px solid #475569; }
+    </style>
+</head>
+<body>
+
+    <div id="auth-page">
+        <div class="auth-card">
+            <h2 id="auth-title" style="margin-bottom: 20px; text-align: center;">Ro'yxatdan o'tish</h2>
+            <div id="reg-fields"><input type="text" id="reg-name" placeholder="Ismingiz"></div>
+            <input type="email" id="auth-email" placeholder="Email manzilingiz">
+            <input type="password" id="auth-pass" placeholder="Parol">
+            <button class="btn-blue" onclick="handleAuth()">Tasdiqlash</button>
+            <p style="font-size: 14px; text-align: center; margin-top: 20px; cursor: pointer; color: #94a3b8;" onclick="toggleAuth()">Akkauntingiz bormi? <span style="color: var(--primary)">Kirish</span></p>
+        </div>
+    </div>
+
+    <div id="app-content" style="display:none;">
+        <nav>
+            <h2 onclick="showTab('home')" style="cursor:pointer; color: var(--primary);">ProStream</h2>
+            <div class="nav-links">
+                <button id="tab-home" onclick="showTab('home')">Asosiy</button>
+                <button id="tab-subs" onclick="showTab('subs')">Obunalar</button>
+                <button id="tab-profile" onclick="showTab('profile')">Profil</button>
+                <button onclick="openModal()" style="background: #10b981; color: white; padding: 8px 15px; border-radius: 8px;">+ Video</button>
+                <button onclick="logout()">Chiqish</button>
+            </div>
+        </nav>
+
+        <div class="container">
+            <div id="section-home">
+                <h2 style="margin-bottom: 25px;">Tavsiya etilgan videolar</h2>
+                <div id="grid-home" class="video-grid"></div>
+            </div>
+            <div id="section-subs" style="display:none;">
+                <h2 style="margin-bottom: 25px;">Obunalarim</h2>
+                <div id="grid-subs" class="video-grid"></div>
+            </div>
+            <div id="section-profile" style="display:none;">
+                <div style="background: var(--card); padding: 30px; border-radius: 20px; margin-bottom: 30px; border: 1px solid #334155;">
+                    <h1 id="prof-display-name">Ism</h1>
+                    <p id="prof-email" style="color: #94a3b8;"></p>
+                </div>
+                <h3>Mening videolarim</h3>
+                <div id="grid-profile" class="video-grid" style="margin-top:20px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay" id="overlay" onclick="closeModal()"></div>
+    <div class="modal" id="modal">
+        <h3 style="margin-bottom: 20px;">Yangi video yuklash</h3>
+        <input type="text" id="v-title" placeholder="Video sarlavhasi">
+        <input type="file" id="v-file" accept="video/*">
+        <button class="btn-blue" onclick="processUpload()">Nashr qilish</button>
+    </div>
+
+    <script>
+        let isLogin = false;
+        let currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        let videos = JSON.parse(localStorage.getItem('videos_db')) || [];
+        let users = JSON.parse(localStorage.getItem('users_db')) || [];
+
+        window.onload = () => { if(currentUser) launchApp(); };
+
+        function toggleAuth() {
+            isLogin = !isLogin;
+            document.getElementById('auth-title').innerText = isLogin ? "Tizimga kirish" : "Ro'yxatdan o'tish";
+            document.getElementById('reg-fields').style.display = isLogin ? "none" : "block";
+        }
+
+        function handleAuth() {
+            const email = document.getElementById('auth-email').value;
+            const pass = document.getElementById('auth-pass').value;
+            if(isLogin) {
+                const user = users.find(u => u.email === email && u.pass === pass);
+                if(user) { currentUser = user; loginDone(); } else alert("Email yoki parol xato!");
+            } else {
+                const name = document.getElementById('reg-name').value;
+                if(name && email && pass) {
+                    const newUser = { name, email, pass, subscriptions: [] };
+                    users.push(newUser);
+                    localStorage.setItem('users_db', JSON.stringify(users));
+                    currentUser = newUser;
+                    loginDone();
+                } else alert("Ma'lumotlarni to'ldiring!");
+            }
+        }
+
+        function loginDone() { localStorage.setItem('currentUser', JSON.stringify(currentUser)); launchApp(); }
+        function launchApp() { document.getElementById('auth-page').style.display='none'; document.getElementById('app-content').style.display='block'; renderAll(); }
+        function logout() { localStorage.removeItem('currentUser'); location.reload(); }
+
+        function openModal() { document.getElementById('modal').style.display='block'; document.getElementById('overlay').style.display='block'; }
+        function closeModal() { document.getElementById('modal').style.display='none'; document.getElementById('overlay').style.display='none'; }
+
+        function processUpload() {
+            const title = document.getElementById('v-title').value;
+            const file = document.getElementById('v-file').files[0];
+            if(title && file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const vidObj = { id: Date.now(), title, data: e.target.result, author: currentUser.name, authorEmail: currentUser.email };
+                    videos.unshift(vidObj);
+                    localStorage.setItem('videos_db', JSON.stringify(videos));
+                    renderAll(); closeModal();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function renderAll() {
+            renderGrid('grid-home', videos);
+            renderGrid('grid-subs', videos.filter(v => currentUser.subscriptions.includes(v.authorEmail)));
+            renderGrid('grid-profile', videos.filter(v => v.authorEmail === currentUser.email), true);
+        }
+
+        function renderGrid(gridId, data, isProfile = false) {
+            const grid = document.getElementById(gridId);
+            grid.innerHTML = data.map(v => `
+                <div class="video-card">
+                    <video src="${v.data}" controls></video>
+                    <div class="info">
+                        <h4>${v.title}</h4>
+                        <p>Kanal: ${v.author}</p>
+                        ${v.authorEmail !== currentUser.email ? `
+                            <button class="btn-sub ${currentUser.subscriptions.includes(v.authorEmail) ? 'active' : 'not-active'}" onclick="toggleSubscription('${v.authorEmail}')">
+                                ${currentUser.subscriptions.includes(v.authorEmail) ? 'Obunadasiz' : 'Obuna bo\'lish'}
+                            </button>
+                        ` : ''}
+                        ${isProfile ? `<button class="delete-btn" onclick="deleteVideo(${v.id})">O'chirish</button>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleSubscription(email) {
+            const index = currentUser.subscriptions.indexOf(email);
+            if(index > -1) currentUser.subscriptions.splice(index, 1);
+            else currentUser.subscriptions.push(email);
+            updateUser(); renderAll();
+        }
+
+        function deleteVideo(id) {
+            if(confirm("Haqiqatan ham o'chirmoqchimisiz?")) {
+                videos = videos.filter(v => v.id !== id);
+                localStorage.setItem('videos_db', JSON.stringify(videos));
+                renderAll();
+            }
+        }
+
+        function updateUser() {
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            const uIdx = users.findIndex(u => u.email === currentUser.email);
+            users[uIdx] = currentUser;
+            localStorage.setItem('users_db', JSON.stringify(users));
+        }
+
+        function showTab(tab) {
+            ['home', 'subs', 'profile'].forEach(t => {
+                document.getElementById('section-'+t).style.display = 'none';
+                document.getElementById('tab-'+t).classList.remove('active');
+            });
+            document.getElementById('section-'+tab).style.display = 'block';
+            document.getElementById('tab-'+tab).classList.add('active');
+            if(tab === 'profile') {
+                document.getElementById('prof-display-name').innerText = currentUser.name;
+                document.getElementById('prof-email').innerText = currentUser.email;
+            }
+        }
+    </script>
+</body>
+</html>
